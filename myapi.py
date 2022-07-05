@@ -33,3 +33,13 @@ def get_student(student_id: int = Path(None, description="The ID of the student 
 
 # Path is used to add more descriptive style
 # It shows up in the docs and also checks on the inputs recieved in the API parameter
+
+# Query Parameters
+# eg: google.com/results?search=Python # querying the API
+# We dont need to define the input in the path, but in the function definition
+@app.get("/get-by-name")
+def get_student(name : str):
+    for student_id in students:
+        if students[student_id]["name"] == name:
+            return students[student_id]
+    return {"Data": "Not Found!"}
