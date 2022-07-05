@@ -49,3 +49,5 @@ def get_student(name : Optional[str] = None): # =None to make it optional # Best
 # Python would give an error, as optional cannot be followed by a required parameter
 # What we can do is add an asterisk "*" at the very begining to allow for any order to be followed for adding of query parameters
 
+# We ca also combine Path parameters and Query Parameters
+# Just by including them together
