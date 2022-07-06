@@ -72,3 +72,4 @@ def update_post(id: int, post: Post):
     my_posts[post_index] = post_dict 
 
     return {"data": post_dict}
+    
