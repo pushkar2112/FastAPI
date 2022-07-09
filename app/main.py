@@ -76,9 +76,10 @@ def create_posts(post: Post, db: Session = Depends(get_db)):
     return {"data": new_post}
 
 @app.get("/posts/{id}")
-def get_post(id: int, response: Response):
-    curs.execute("select * from posts where id = %s",(str(id)))
-    post = curs.fetchone()
+def get_post(id: int, response: Response, db: Session = Depends(get_db)):
+    # curs.execute("select * from posts where id = %s",(str(id)))
+    # post = curs.fetchone()
+    post = db.query(models.Post).filter(models.Post.id == id).first()
 
     if not post:
         # response.status_code = status.HTTP_404_NOT_FOUND
@@ -88,29 +89,39 @@ def get_post(id: int, response: Response):
     return {"post_details": post} 
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int):
-    #deleting post
-    curs.execute("delete from posts where id = %s returning *",(str(id)))
-    deleted_post = curs.fetchone()
+def delete_post(id: int, db: Session = Depends(get_db)):
+    # #deleting post
+    # curs.execute("delete from posts where id = %s returning *",(str(id)))
+    # deleted_post = curs.fetchone()
 
-    conn.commit()
+    # conn.commit()
 
-    if deleted_post == None:
+    post = db.query(models.Post).filter(models.Post.id == id)
+
+    if post.first() == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post does not exists!!")
+    
+    post.delete(synchronize_session=False)
+    db.commit()
     
 # We do not return a message!
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @app.put("/posts/{id}")
-def update_post(id: int, post: Post):
-    curs.execute("update posts set title = %s, content = %s, published = %s where id = %s returning *",
-    (post.title, post.content, post.published, str(id)))
+def update_post(id: int, updated_post: Post, db: Session = Depends(get_db)):
+    # curs.execute("update posts set title = %s, content = %s, published = %s where id = %s returning *",
+    # (post.title, post.content, post.published, str(id)))
     
-    updated_post = curs.fetchone()
+    # updated_post = curs.fetchone()
+    # conn.commit()
 
-    if updated_post == None:
+    post_query = db.query(models.Post).filter(models.Post.id == id)
+    post = post_query.first()
+
+    if post == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post does not exists!!")
 
-    conn.commit()
+    post_query.update(updated_post.dict(), synchronize_session=False)
+    db.commit()
 
-    return {"data": updated_post}
+    return {"data": post_query.first()}
