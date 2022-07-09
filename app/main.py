@@ -45,10 +45,10 @@ def get_posts(db: Session = Depends(get_db)):
     # curs.execute("select * from posts")
     # posts = curs.fetchall()
     posts = db.query(models.Post).all()
-    return {"data": posts}
+    return posts
 
 
-@app.post("/posts", status_code=status.HTTP_201_CREATED)
+@app.post("/posts", status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
 def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
     # We dont use fstrings coz they make us vulnerable to SQL injection attacks
     # curs.execute('insert into posts (title, content, published) values (%s,%s,%s) returning *',(post.title, post.content, post.published))
@@ -61,7 +61,7 @@ def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_post)
 
-    return {"data": new_post}
+    return new_post
 
 @app.get("/posts/{id}")
 def get_post(id: int, response: Response, db: Session = Depends(get_db)):
@@ -74,7 +74,7 @@ def get_post(id: int, response: Response, db: Session = Depends(get_db)):
         # return {"message": "Post Not Found!!"}
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Post Not Found!!")
-    return {"post_details": post} 
+    return post
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int, db: Session = Depends(get_db)):
@@ -112,4 +112,4 @@ def update_post(id: int, updated_post: schemas.PostUpdate, db: Session = Depends
     post_query.update(updated_post.dict(), synchronize_session=False)
     db.commit()
 
-    return {"data": post_query.first()}
+    return post_query.first()
