@@ -1,5 +1,8 @@
+from time import time
 from typing import Optional
 from fastapi import Body, FastAPI, Response, status, HTTPException
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from pydantic import BaseModel
 from random import randrange
 
@@ -15,6 +18,18 @@ my_posts = [
     {"title": "favourite foods", "content": "I like pizza!!", "id": 2}
     ]
 
+while True:
+    try:
+        conn = psycopg2.connect(host="localhost", database="fastapi", user="postgres", password="<PASSWORD>", cursor_factory=RealDictCursor)
+        curs = conn.cursor()
+        print("Connected Successfully!")
+        break
+    except Exception as err:
+        print("Connection failed!")
+        print("ERROR: ", err)
+        time.sleep(2)
+
+
 def find_post(id):
     for p in my_posts:
         if p["id"] == id:
@@ -26,18 +41,22 @@ def root():
 
 @app.get("/posts")
 def get_posts():
-    return {"data": my_posts}
+    curs.execute("select * from posts")
+    posts = curs.fetchall()
+    return {"data": posts}
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_posts(post: Post):
-    post_dict = post.dict()
-    post_dict['id'] = randrange(0,10000000)
-    my_posts.append(post_dict)
-    return {"data": post_dict}
+    # We dont use fstrings coz they make us vulnerable to SQL injection attacks
+    curs.execute('insert into posts (title, content, published) values (%s,%s,%s) returning *',(post.title, post.content, post.published))
+    new_post = curs.fetchone()
+    conn.commit()
+    return {"data": new_post}
 
 @app.get("/posts/{id}")
 def get_post(id: int, response: Response):
-    post = find_post(id)
+    curs.execute("select * from posts where id = %s",(str(id)))
+    post = curs.fetchone()
 
     if not post:
         # response.status_code = status.HTTP_404_NOT_FOUND
@@ -49,25 +68,27 @@ def get_post(id: int, response: Response):
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int):
     #deleting post
-    try:
-        post_index = my_posts.index(find_post(id))
-    except:
+    curs.execute("delete from posts where id = %s returning *",(str(id)))
+    deleted_post = curs.fetchone()
+
+    conn.commit()
+
+    if deleted_post == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post does not exists!!")
     
-    del my_posts[post_index]
 # We do not return a message!
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @app.put("/posts/{id}")
 def update_post(id: int, post: Post):
+    curs.execute("update posts set title = %s, content = %s, published = %s where id = %s returning *",
+    (post.title, post.content, post.published, str(id)))
     
-    try:
-        post_index = my_posts.index(find_post(id))
-    except:
+    updated_post = curs.fetchone()
+
+    if updated_post == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post does not exists!!")
 
-    post_dict = post.dict() 
-    post_dict["id"] = id
-    my_posts[post_index] = post_dict 
+    conn.commit()
 
-    return {"data": post_dict}
+    return {"data": updated_post}
