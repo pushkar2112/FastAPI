@@ -7,17 +7,12 @@ from psycopg2.extras import RealDictCursor
 from pydantic import BaseModel
 from random import randrange
 from sqlalchemy.orm import Session
-from . import models
+from . import models, schemas
 from .database import engine, get_db
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-
-class Post(BaseModel):
-    title: str
-    content: str
-    published: bool = True
 
 my_posts = [
     {"title": "title of post1", "content": "content of post 1", "id": 1}, 
@@ -45,13 +40,6 @@ def find_post(id):
 def root():
     return {"message": "Welcome to my API!"}
 
-@app.get("/sqlalchemy")
-def test_posts(db: Session = Depends(get_db)):
-    # Basically this ORM method makes a SQL quey to the db
-    posts = db.query(models.Post).all()
-    
-    return {"data": posts}
-
 @app.get("/posts")
 def get_posts(db: Session = Depends(get_db)):
     # curs.execute("select * from posts")
@@ -61,7 +49,7 @@ def get_posts(db: Session = Depends(get_db)):
 
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
-def create_posts(post: Post, db: Session = Depends(get_db)):
+def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
     # We dont use fstrings coz they make us vulnerable to SQL injection attacks
     # curs.execute('insert into posts (title, content, published) values (%s,%s,%s) returning *',(post.title, post.content, post.published))
     # new_post = curs.fetchone()
@@ -108,7 +96,7 @@ def delete_post(id: int, db: Session = Depends(get_db)):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @app.put("/posts/{id}")
-def update_post(id: int, updated_post: Post, db: Session = Depends(get_db)):
+def update_post(id: int, updated_post: schemas.PostUpdate, db: Session = Depends(get_db)):
     # curs.execute("update posts set title = %s, content = %s, published = %s where id = %s returning *",
     # (post.title, post.content, post.published, str(id)))
     
