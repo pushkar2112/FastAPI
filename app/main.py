@@ -1,4 +1,5 @@
 from time import time
+from turtle import title
 from typing import Optional
 from fastapi import Body, FastAPI, Response, Depends, status, HTTPException
 import psycopg2
@@ -46,21 +47,32 @@ def root():
 
 @app.get("/sqlalchemy")
 def test_posts(db: Session = Depends(get_db)):
-    return {"status": "success"}
+    # Basically this ORM method makes a SQL quey to the db
+    posts = db.query(models.Post).all()
+    
+    return {"data": posts}
 
 @app.get("/posts")
-def get_posts():
-    curs.execute("select * from posts")
-    posts = curs.fetchall()
+def get_posts(db: Session = Depends(get_db)):
+    # curs.execute("select * from posts")
+    # posts = curs.fetchall()
+    posts = db.query(models.Post).all()
     return {"data": posts}
 
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
-def create_posts(post: Post):
+def create_posts(post: Post, db: Session = Depends(get_db)):
     # We dont use fstrings coz they make us vulnerable to SQL injection attacks
-    curs.execute('insert into posts (title, content, published) values (%s,%s,%s) returning *',(post.title, post.content, post.published))
-    new_post = curs.fetchone()
-    conn.commit()
+    # curs.execute('insert into posts (title, content, published) values (%s,%s,%s) returning *',(post.title, post.content, post.published))
+    # new_post = curs.fetchone()
+    # conn.commit()
+
+    new_post = models.Post(title=post.title, content=post.content, published= post.published)
+
+    db.add(new_post)
+    db.commit()
+    db.refresh(new_post)
+
     return {"data": new_post}
 
 @app.get("/posts/{id}")
