@@ -1,10 +1,15 @@
 from time import time
 from typing import Optional
-from fastapi import Body, FastAPI, Response, status, HTTPException
+from fastapi import Body, FastAPI, Response, Depends, status, HTTPException
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from pydantic import BaseModel
 from random import randrange
+from sqlalchemy.orm import Session
+from . import models
+from .database import engine, get_db
+
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -20,7 +25,7 @@ my_posts = [
 
 while True:
     try:
-        conn = psycopg2.connect(host="localhost", database="fastapi", user="postgres", password="<PASSWORD>", cursor_factory=RealDictCursor)
+        conn = psycopg2.connect(host="localhost", database="fastapi", user="postgres", password="Pushkar1", cursor_factory=RealDictCursor)
         curs = conn.cursor()
         print("Connected Successfully!")
         break
@@ -39,11 +44,16 @@ def find_post(id):
 def root():
     return {"message": "Welcome to my API!"}
 
+@app.get("/sqlalchemy")
+def test_posts(db: Session = Depends(get_db)):
+    return {"status": "success"}
+
 @app.get("/posts")
 def get_posts():
     curs.execute("select * from posts")
     posts = curs.fetchall()
     return {"data": posts}
+
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_posts(post: Post):
