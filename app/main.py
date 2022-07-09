@@ -66,8 +66,8 @@ def create_posts(post: Post, db: Session = Depends(get_db)):
     # curs.execute('insert into posts (title, content, published) values (%s,%s,%s) returning *',(post.title, post.content, post.published))
     # new_post = curs.fetchone()
     # conn.commit()
-
-    new_post = models.Post(title=post.title, content=post.content, published= post.published)
+    
+    new_post = models.Post(**post.dict())
 
     db.add(new_post)
     db.commit()
