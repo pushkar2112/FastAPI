@@ -4,9 +4,11 @@ from fastapi import APIRouter, Body, FastAPI, Response, Depends, status, HTTPExc
 from sqlalchemy.orm import Session
 from ..database import get_db
 
-router = APIRouter()
+router = APIRouter(
+    prefix='/posts'
+)
 
-@router.get("/posts", response_model=List[schemas.Post])
+@router.get("/", response_model=List[schemas.Post])
 def get_posts(db: Session = Depends(get_db)):
     # curs.execute("select * from posts")
     # posts = curs.fetchall()
@@ -14,7 +16,7 @@ def get_posts(db: Session = Depends(get_db)):
     return posts
 
 
-@router.post("/posts", status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
 def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
     # We dont use fstrings coz they make us vulnerable to SQL injection attacks
     # curs.execute('insert into posts (title, content, published) values (%s,%s,%s) returning *',(post.title, post.content, post.published))
@@ -29,7 +31,7 @@ def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
 
     return new_post
 
-@router.get("/posts/{id}", response_model=schemas.Post)
+@router.get("/{id}", response_model=schemas.Post)
 def get_post(id: int, response: Response, db: Session = Depends(get_db)):
     # curs.execute("select * from posts where id = %s",(str(id)))
     # post = curs.fetchone()
@@ -42,7 +44,7 @@ def get_post(id: int, response: Response, db: Session = Depends(get_db)):
                             detail="Post Not Found!!")
     return post
 
-@router.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int, db: Session = Depends(get_db)):
     # #deleting post
     # curs.execute("delete from posts where id = %s returning *",(str(id)))
@@ -61,7 +63,7 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 # We do not return a message!
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-@router.put("/posts/{id}", response_model=schemas.Post)
+@router.put("/{id}", response_model=schemas.Post)
 def update_post(id: int, updated_post: schemas.PostUpdate, db: Session = Depends(get_db)):
     # curs.execute("update posts set title = %s, content = %s, published = %s where id = %s returning *",
     # (post.title, post.content, post.published, str(id)))
