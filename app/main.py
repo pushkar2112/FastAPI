@@ -1,6 +1,6 @@
 from time import time
 from turtle import title
-from typing import Optional
+from typing import Optional, List
 from fastapi import Body, FastAPI, Response, Depends, status, HTTPException
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -40,7 +40,7 @@ def find_post(id):
 def root():
     return {"message": "Welcome to my API!"}
 
-@app.get("/posts")
+@app.get("/posts", response_model=List[schemas.Post])
 def get_posts(db: Session = Depends(get_db)):
     # curs.execute("select * from posts")
     # posts = curs.fetchall()
@@ -63,7 +63,7 @@ def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
 
     return new_post
 
-@app.get("/posts/{id}")
+@app.get("/posts/{id}", response_model=schemas.Post)
 def get_post(id: int, response: Response, db: Session = Depends(get_db)):
     # curs.execute("select * from posts where id = %s",(str(id)))
     # post = curs.fetchone()
@@ -95,7 +95,7 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 # We do not return a message!
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-@app.put("/posts/{id}")
+@app.put("/posts/{id}", response_model=schemas.Post)
 def update_post(id: int, updated_post: schemas.PostUpdate, db: Session = Depends(get_db)):
     # curs.execute("update posts set title = %s, content = %s, published = %s where id = %s returning *",
     # (post.title, post.content, post.published, str(id)))
